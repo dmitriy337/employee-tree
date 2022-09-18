@@ -1,0 +1,30 @@
+version: '3'
+services:
+  postgres:
+    image: postgres:13
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-U", "${DEFAULT_DATABASE_USER}", "-d", "${DEFAULT_DATABASE_DB}" ]
+      interval: 5s
+      retries: 5
+    environment:
+      - POSTGRES_DB=${DEFAULT_DATABASE_DB}
+      - POSTGRES_USER=${DEFAULT_DATABASE_USER}
+      - POSTGRES_PASSWORD=${DEFAULT_DATABASE_PASSWORD}
+    env_file:
+      - .env
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data-volume:/var/lib/postgresql/data
+  app:
+   build: .
+   command: bash -c "alembic upgrade head && python ./main.py"
+   restart: always
+   ports:
+     - "8080:8080"
+   depends_on:
+     postgres:
+        condition: service_healthy
+
+volumes:
+  postgres-data-volume:
